@@ -85,7 +85,7 @@ def getVMS(tvid,vid,uid):
                 "&enc="+sc+\
                 "&qyid="+uid+"&tn="+str(random()) +"&um=0" +\
                 "&authkey="+hashlib.new('md5',bytes(''+str(tm)+tvid,'utf-8')).hexdigest()
-    print(vmsreq)
+    #print(vmsreq)
     return json.loads(get_content(vmsreq))
 
 def getDispathKey(rid):
