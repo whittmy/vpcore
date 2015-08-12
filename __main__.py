@@ -89,7 +89,10 @@ def main(**kwargs):
     """
     from .common import main
     main()
-    
+if __name__ == '__main__':
+    main()
+
+# rocking    
 def mycall(url, stream_id=None):
     from .common import my_call
     return my_call(url, stream_id)

@@ -19,7 +19,7 @@ def real_url(host,vid,tvid,new,clipURL,ck):
     url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())
     return json.loads(get_html(url))['url']
 
-def sohu_download(url, output_dir = '.', merge = True, info_only = False, extractor_proxy=None):
+def sohu_download(url, output_dir = '.', merge = True, info_only = False, extractor_proxy=None, **kwargs):
     if re.match(r'http://share.vrs.sohu.com', url):
         vid = r1('id=(\d+)', url)
     else:
@@ -64,10 +64,12 @@ def sohu_download(url, output_dir = '.', merge = True, info_only = False, extrac
         for new,clip,ck, in zip(data['su'], data['clipsURL'], data['ck']):
             clipURL = urlparse(clip).path
             urls.append(real_url(host,vid,tvid,new,clipURL,ck))
-
-    print_info(site_info, title, 'mp4', size)
-    if not info_only:
-        download_urls(urls, title, 'mp4', size, output_dir, refer = url, merge = merge)
+    if kwargs['geturl']:
+        return '\n'.join(urls)
+    else:
+        print_info(site_info, title, 'mp4', size)
+        if not info_only:
+            download_urls(urls, title, 'mp4', size, output_dir, refer = url, merge = merge)
 
 site_info = "Sohu.com"
 download = sohu_download

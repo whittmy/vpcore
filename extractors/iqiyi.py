@@ -12,6 +12,12 @@ import hashlib
 
 '''
 Changelog:
+-> http://www.iqiyi.com/common/flashplayer/20150805/MainPlayer_5_2_26_c3_3_7.swf
+    former key still works until 20150809
+    In Zombie kcuf = [13, 3, 0, 15, 8, 2, 11, 7, 10, 1, 12, 9, 14, 6, 4, 5] ,which is construct in LogManager,CoreManager,impls.pub.setting,impls.pub.statistics,StageVideoManager
+              thd create a array of ['2', 'd', 'f', 'e', '0', 'c', '5', '3', '8', 'b', '9', '6', 'a', '7', '4', '1']
+-> http://www.iqiyi.com/common/flashplayer/20150710/MainPlayer_5_2_25_c3_3_5_1.swf
+
 -> http://www.iqiyi.com/common/flashplayer/20150703/MainPlayer_5_2_24_1_c3_3_3.swf
     SingletonClass.ekam
 
@@ -19,7 +25,7 @@ Changelog:
     In this version Z7elzzup.cexe,just use node.js to run this code(with some modification) and get innerkey.
 
 -> http://www.iqiyi.com/common/flashplayer/20150612/MainPlayer_5_2_23_1_c3_2_6_5.swf
-    In this version do not directly use enc key 
+    In this version do not directly use enc key
     gen enc key (so called sc ) in DMEmagelzzup.mix(tvid) -> (tm->getTimer(),src='hsalf',sc)
     encrypy alogrithm is md5(DMEmagelzzup.mix.genInnerKey +tm+tvid)
     how to gen genInnerKey ,can see first 3 lin in mix function in this file
@@ -41,11 +47,8 @@ bid meaning for quality
 
 def mix(tvid):
     enc = []
-    #enc.append('754f3a28fee047ad9b654420056b400b')
-    #enc.append('8e29ab5666d041c3a1ea76e06dabdffb')
     enc.append('65096542539c4e529c8ee97511cd979f')
     tm = str(randint(2000,4000))
-    #src = 'hsalf'
     src = 'eknas'
     enc.append(str(tm))
     enc.append(tvid)
@@ -75,10 +78,10 @@ def getVrsEncodeCode(vlink):
 def getVMS(tvid,vid,uid):
     #tm ->the flash run time for md5 usage
     #um -> vip 1 normal 0
-    #authkey -> for password protected video ,replace '' with your password 
+    #authkey -> for password protected video ,replace '' with your password
     #puid user.passportid may empty?
     #TODO: support password protected video
-    tm,sc,src = mix(tvid) 
+    tm,sc,src = mix(tvid)
     #print('vms')
     vmsreq='http://cache.video.qiyi.com/vms?key=fvip&src=1702633101b340d8917a69cf8a4b8c7' +\
                 "&tvId="+tvid+"&vid="+vid+"&vinfo=1&tm="+tm+\
@@ -111,9 +114,9 @@ def iqiyi_download(url, output_dir = '.', merge = True, info_only = False, getur
     #print('%s,%s,%s'% tvid, videoid,gen_uid);
     info = getVMS(tvid, videoid, gen_uid)
     
-    print('infolll')
+    #print('infolll')
     assert info["code"] == "A000000"
-    print('11111111111112222222')
+    #print('11111111111112222222')
     title = info["data"]["vi"]["vn"]
 
     # data.vp = json.data.vp
@@ -129,7 +132,7 @@ def iqiyi_download(url, output_dir = '.', merge = True, info_only = False, getur
     except:
         log.e("[Error] Do not support for iQIYI VIP video.")
         exit(-1)
-    print('11111111111113333')
+    #print('11111111111113333')
     bid=0
     for i in info["data"]["vp"]["tkl"][0]["vs"]:
         if int(i["bid"])<=10 and int(i["bid"])>=bid:

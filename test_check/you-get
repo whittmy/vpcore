@@ -2,8 +2,8 @@
 # This file is Python 2 compliant.
 
 import os, sys
-"""
-_srcdir = 'dir_you_get/'
+
+_srcdir = '../../' # 设置vpcore的父目录为源码目录(下面包含了 vpcore, you-get等项目)
 if getattr(sys, 'frozen', False):
     # The application is frozen
     _filepath = os.path.dirname(os.path.realpath(sys.executable))
@@ -12,15 +12,11 @@ else:
     # Change this bit to match where you store your data files:
     _filepath = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, os.path.join(_filepath, _srcdir))
-"""
 
 if sys.version_info[0] == 3:
-    #import you_get
-    #if __name__ == '__main__':
-        #you_get.main(repo_path=_filepath)
-    import __main__ 
-    __main__.main(repo_path=_filepath)
-        # you_get.mycall("http://www.letv.com/ptv/vplay/23068906.html")
+    import vpcore #导入 vpcore包(含__init__.py文件)，继而被导入 __main__.py模块中的相关内容。
+    if __name__ == '__main__': #因为当前为执行，所以__name__为 '__main__'
+        vpcore.main(repo_path=_filepath) # 调用vpcore包的main函数，即__main__.py模块中的main函数。
 else:
     from you_get.util import log
     log.wtf("""

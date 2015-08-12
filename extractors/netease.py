@@ -52,9 +52,10 @@ def netease_cloud_music_download(url, output_dir='.', merge=True, info_only=Fals
 
 def netease_video_download(vinfo, output_dir='.', info_only=False):
     title = "%s - %s" % (vinfo['name'], vinfo['artistName'])
-    url_best = sorted(vinfo["brs"].items(), reverse=True, key=lambda x: int(x[0]))[0][1]
-    netease_download_common(title, url_best, output_dir=output_dir, info_only=info_only)
-
+    url_best = sorted(vinfo["brs"].items(), reverse=True,
+                      key=lambda x: int(x[0]))[0][1]
+    netease_download_common(title, url_best,
+                            output_dir=output_dir, info_only=info_only)
 
 def netease_song_download(song, output_dir='.', info_only=False):
     title = "%s. %s" % (song['position'], song['name'])
@@ -66,7 +67,8 @@ def netease_song_download(song, output_dir='.', info_only=False):
     elif 'bMusic' in song:
         url_best = make_url(song['bMusic']['dfsId'])
 
-    netease_download_common(title, url_best,output_dir=output_dir, info_only=info_only)
+    netease_download_common(title, url_best,
+                            output_dir=output_dir, info_only=info_only)
 
 def netease_download_common(title, url_best, output_dir, info_only):
     songtype, ext, size = url_info(url_best)
@@ -76,6 +78,8 @@ def netease_download_common(title, url_best, output_dir, info_only):
 
 
 def netease_download(url, output_dir = '.', merge = True, info_only = False):
+    if "163.fm" in url:
+        url = get_location(url)
     if "music.163.com" in url:
         netease_cloud_music_download(url,output_dir,merge,info_only)
     else:

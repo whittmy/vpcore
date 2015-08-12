@@ -158,6 +158,12 @@ def get_decoded_html(url, faker = False):
     else:
         return data
 
+def get_location(url):
+    response = request.urlopen(url)
+    # urllib will follow redirections and it's too much code to tell urllib
+    # not to do that
+    return response.geturl()
+
 def get_content(url, headers={}, decoded=True):
     """Gets the content of a URL via sending a HTTP GET request.
 
@@ -798,10 +804,13 @@ def download_main(download, download_playlist, urls, playlist, **kwargs):
         if playlist:
             download_playlist(url, **kwargs)
         else:
+            # rocking
             if kwargs['geturl']:
                 return download(url, **kwargs)
-            download(url, **kwargs)
+            else:
+                download(url, **kwargs)
 
+# rocking
 def my_call(url, stream_id=None):
     args = [url]
     #print (args) 
@@ -815,14 +824,14 @@ def my_call(url, stream_id=None):
     try:
         if stream_id:
             if not extractor_proxy:
-                rt = download_main(any_download, None, args, False, stream_id=stream_id, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
+                rt = download_main(any_download, None, args, False, stream_id=stream_id, output_dir=output_dir, merge=merge, info_only=info_only, geturl=geturl)
             else:
-                rt = download_main(any_download, None, args, False, stream_id=stream_id, extractor_proxy=extractor_proxy, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
+                rt = download_main(any_download, None, args, False, stream_id=stream_id, extractor_proxy=extractor_proxy, output_dir=output_dir, merge=merge, info_only=info_only, geturl=geturl)
         else:
             if not extractor_proxy:
-                rt = download_main(any_download, None, args, False, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
+                rt = download_main(any_download, None, args, False, output_dir=output_dir, merge=merge, info_only=info_only, geturl=geturl)
             else:
-                rt = download_main(any_download, None, args, False, extractor_proxy=extractor_proxy, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
+                rt = download_main(any_download, None, args, False, extractor_proxy=extractor_proxy, output_dir=output_dir, merge=merge, info_only=info_only, geturl=geturl)
         return rt
     except KeyboardInterrupt:
         if traceback:
@@ -839,7 +848,7 @@ def script_main(script_name, download, download_playlist = None):
     -h | --help                              Print this help and exit.
     '''
     help += '''\nDownload options (use with URLs):
-    -g | --geturl                            only get a single url to play
+    -g | --geturl                            only get a single url to play (rocking)
     -f | --force                             Force overwriting existed files.
     -i | --info                              Display the information of videos without downloading.
     -u | --url                               Display the real URLs of videos without downloading.
@@ -853,7 +862,7 @@ def script_main(script_name, download, download_playlist = None):
          --no-proxy                          Don't use any proxy. (ignore $http_proxy)
          --debug                             Show traceback on KeyboardInterrupt.
     '''
-
+    #rocking
     short_opts = 'Vhfiuc:nF:o:p:x:y:g:'
     opts = ['version', 'help', 'force', 'info', 'url', 'cookies','no-merge', 'no-proxy', 'debug', 'format=', 'stream=', 'itag=', 'output-dir=', 'player=', 'http-proxy=', 'extractor-proxy=', 'lang=', 'geturl=']
     if download_playlist:
@@ -882,7 +891,7 @@ def script_main(script_name, download, download_playlist = None):
     lang = None
     output_dir = '.'
     proxy = None
-    geturl = False
+    geturl = False # rocking
     extractor_proxy = None
     traceback = False
     for o, a in opts:
@@ -895,7 +904,7 @@ def script_main(script_name, download, download_playlist = None):
             sys.exit()
         elif o in ('-f', '--force'):
             force = True
-        elif o in ('-g', '--geturl'):
+        elif o in ('-g', '--geturl'): # rocking
             geturl = True
         elif o in ('-i', '--info'):
             info_only = True
@@ -936,12 +945,12 @@ def script_main(script_name, download, download_playlist = None):
 
     try:
         if stream_id:
-            if not extractor_proxy:
+            if not extractor_proxy: #rocking
                 download_main(download, download_playlist, args, playlist, stream_id=stream_id, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
             else:
                 download_main(download, download_playlist, args, playlist, stream_id=stream_id, extractor_proxy=extractor_proxy, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
         else:
-            if not extractor_proxy:
+            if not extractor_proxy: #rocking
                 download_main(download, download_playlist, args, playlist, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
             else:
                 download_main(download, download_playlist, args, playlist, extractor_proxy=extractor_proxy, output_dir=output_dir, merge=merge, info_only=info_only,geturl=geturl)
@@ -1044,8 +1053,8 @@ def url_to_module(url):
 
 def any_download(url, **kwargs):
     m, url = url_to_module(url)
+    #rocking
     if kwargs['geturl']:
-        #print(url)
         u = m.download(url, **kwargs)
         #print(u)
         return u

@@ -28,6 +28,7 @@ class VideoExtractor():
             self.url = args[0]
 
     def download_by_url(self, url, **kwargs):
+        # rocking
         self.__init__()
         self.url = url
 
@@ -41,7 +42,7 @@ class VideoExtractor():
             self.streams_sorted = [dict([('id', stream_type['id'])] + list(self.streams[stream_type['id']].items())) for stream_type in self.__class__.stream_types if stream_type['id'] in self.streams]
         except:
             self.streams_sorted = [dict([('itag', stream_type['itag'])] + list(self.streams[stream_type['itag']].items())) for stream_type in self.__class__.stream_types if stream_type['itag'] in self.streams]
-        
+        # rocking
         if kwargs['geturl']:
             #print ('begin to youku_extract')
             return self.extract(**kwargs)
@@ -63,6 +64,7 @@ class VideoExtractor():
             self.streams_sorted = [dict([('id', stream_type['id'])] + list(self.streams[stream_type['id']].items())) for stream_type in self.__class__.stream_types if stream_type['id'] in self.streams]
         except:
             self.streams_sorted = [dict([('itag', stream_type['itag'])] + list(self.streams[stream_type['itag']].items())) for stream_type in self.__class__.stream_types if stream_type['itag'] in self.streams]
+        #rocking
         if kwargs['geturl']:
             return self.extract(**kwargs)
             

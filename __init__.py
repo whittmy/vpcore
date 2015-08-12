@@ -8,6 +8,7 @@ if sys.version_info[0] == 3:
     #from .util import log
 
     from .__main__ import *
+    from .with_php import *
 
     #from .common import *
     #from .version import *

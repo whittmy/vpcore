@@ -62,16 +62,18 @@ def video_info(vid,**kwargs):
     if "stream_id" in kwargs and kwargs["stream_id"].lower() in support_stream_id:
         stream_id = kwargs["stream_id"]
     else:
-        print("Current Video Supports:")
-        for i in support_stream_id:
-            print("\t--format",i,"<URL>")
+        #rocking
+        if kwargs['geturl']==False:
+            print("Current Video Supports:")
+            for i in support_stream_id:
+                print("\t--format",i,"<URL>")
         if "1080p" in support_stream_id:
             stream_id = '1080p'
         elif "720p" in support_stream_id:
             stream_id = '720p'
         else:
             stream_id =sorted(support_stream_id,key= lambda i: int(i[1:]))[-1]
-
+    #exit('333333333');
     url =info["playurl"]["domain"][0]+info["playurl"]["dispatch"][stream_id][0]
     ext = info["playurl"]["dispatch"][stream_id][1].split('.')[-1]
     url+="&ctv=pc&m3v=1&termid=1&format=1&hwtype=un&ostype=Linux&tag=letv&sign=letv&expect=3&tn={}&pay=0&iscpn=f9051&rateid={}".format(random.random(),stream_id)
@@ -79,11 +81,14 @@ def video_info(vid,**kwargs):
     r2=get_content(url,decoded=False)
     info2=json.loads(str(r2,"utf-8"))
 
+    #exit(info2["location"])
     # hold on ! more things to do
     # to decode m3u8 (encoded)
     m3u8 = get_content(info2["location"],decoded=False)
         
     m3u8_list = decode(m3u8)
+    #print(m3u8_list)
+    #exit();
     if kwargs['geturl']:
         return ext,m3u8_list
     urls = re.findall(r'^[^#][^\r]*',m3u8_list,re.MULTILINE)
@@ -91,7 +96,6 @@ def video_info(vid,**kwargs):
 
 def letv_download_by_vid(vid,title, output_dir='.', merge=True, info_only=False,**kwargs):
     ext , urls = video_info(vid,**kwargs)
-    
     if kwargs['geturl']:
         #u = '\n'.join(urls)
         return urls  
@@ -149,10 +153,10 @@ def letv_download(url, output_dir='.', merge=True, info_only=False ,**kwargs):
         else:
             vid = match1(html, r'vid="(\d+)"')
         title = match1(html,r'name="irTitle" content="(.*?)"')
-        
         if kwargs['geturl']:
             return letv_download_by_vid(vid, title=title, output_dir=output_dir, merge=merge, info_only=info_only,**kwargs)
-        letv_download_by_vid(vid, title=title, output_dir=output_dir, merge=merge, info_only=info_only,**kwargs)
+        else:
+            letv_download_by_vid(vid, title=title, output_dir=output_dir, merge=merge, info_only=info_only,**kwargs)
 
 site_info = "LeTV.com"
 download = letv_download
