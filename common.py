@@ -79,6 +79,24 @@ def match1(text, *patterns):
                 ret.append(match.group(1))
         return ret
 
+def matchall(text, patterns):
+    """Scans through a string for substrings matched some patterns.
+
+    Args:
+        text: A string to be scanned.
+        patterns: a list of regex pattern.
+
+    Returns:
+        a list if matched. empty if not.
+    """
+
+    ret = []
+    for pattern in patterns:
+        match = re.findall(pattern, text)
+        ret += match
+
+    return ret
+
 def launch_player(player, urls):
     import subprocess
     import shlex
@@ -481,6 +499,24 @@ class DummyProgressBar:
     def done(self):
         pass
 
+def get_output_filename(urls, title, ext, output_dir, merge):
+    merged_ext = ext
+    if (len(urls) > 1) and merge:
+        from .processor.ffmpeg import has_ffmpeg_installed
+        if ext in ['flv', 'f4v']:
+            if has_ffmpeg_installed():
+                merged_ext = 'mp4'
+            else:
+                merged_ext = 'flv'
+        elif ext == 'mp4':
+            merged_ext = 'mp4'
+        elif ext == 'ts':
+            if has_ffmpeg_installed():
+                merged_ext = 'mkv'
+            else:
+                merged_ext = 'ts'
+    return '%s.%s' % (title, merged_ext)
+
 def download_urls(urls, title, ext, total_size, output_dir='.', refer=None, merge=True, faker=False):
     assert urls
     if dry_run:
@@ -501,12 +537,12 @@ def download_urls(urls, title, ext, total_size, output_dir='.', refer=None, merg
             pass
 
     title = tr(get_filename(title))
+    output_filename = get_output_filename(urls, title, ext, output_dir, merge)
+    output_filepath = os.path.join(output_dir, output_filename)
 
-    filename = '%s.%s' % (title, ext)
-    filepath = os.path.join(output_dir, filename)
     if total_size:
-        if not force and os.path.exists(filepath) and os.path.getsize(filepath) >= total_size * 0.9:
-            print('Skipping %s: file already exists' % filepath)
+        if not force and os.path.exists(output_filepath) and os.path.getsize(output_filepath) >= total_size * 0.9:
+            print('Skipping %s: file already exists' % output_filepath)
             print()
             return
         bar = SimpleProgressBar(total_size, len(urls))
@@ -515,8 +551,8 @@ def download_urls(urls, title, ext, total_size, output_dir='.', refer=None, merg
 
     if len(urls) == 1:
         url = urls[0]
-        print('Downloading %s ...' % tr(filename))
-        url_save(url, filepath, bar, refer = refer, faker = faker)
+        print('Downloading %s ...' % tr(output_filename))
+        url_save(url, output_filepath, bar, refer = refer, faker = faker)
         bar.done()
     else:
         parts = []
@@ -538,10 +574,10 @@ def download_urls(urls, title, ext, total_size, output_dir='.', refer=None, merg
                 from .processor.ffmpeg import has_ffmpeg_installed
                 if has_ffmpeg_installed():
                     from .processor.ffmpeg import ffmpeg_concat_flv_to_mp4
-                    ffmpeg_concat_flv_to_mp4(parts, os.path.join(output_dir, title + '.mp4'))
+                    ffmpeg_concat_flv_to_mp4(parts, output_filepath)
                 else:
                     from .processor.join_flv import concat_flv
-                    concat_flv(parts, os.path.join(output_dir, title + '.flv'))
+                    concat_flv(parts, output_filepath)
             except:
                 raise
             else:
@@ -553,25 +589,25 @@ def download_urls(urls, title, ext, total_size, output_dir='.', refer=None, merg
                 from .processor.ffmpeg import has_ffmpeg_installed
                 if has_ffmpeg_installed():
                     from .processor.ffmpeg import ffmpeg_concat_mp4_to_mp4
-                    ffmpeg_concat_mp4_to_mp4(parts, os.path.join(output_dir, title + '.mp4'))
+                    ffmpeg_concat_mp4_to_mp4(parts, output_filepath)
                 else:
                     from .processor.join_mp4 import concat_mp4
-                    concat_mp4(parts, os.path.join(output_dir, title + '.mp4'))
+                    concat_mp4(parts, output_filepath)
             except:
                 raise
             else:
                 for part in parts:
                     os.remove(part)
-        
+
         elif ext == "ts":
             try:
                 from .processor.ffmpeg import has_ffmpeg_installed
                 if has_ffmpeg_installed():
                     from .processor.ffmpeg import ffmpeg_concat_ts_to_mkv
-                    ffmpeg_concat_ts_to_mkv(parts, os.path.join(output_dir, title + '.mkv'))
+                    ffmpeg_concat_ts_to_mkv(parts, output_filepath)
                 else:
                     from .processor.join_ts import concat_ts
-                    concat_ts(parts, os.path.join(output_dir, title + '.ts'))
+                    concat_ts(parts, output_filepath)
             except:
                 raise
             else:
@@ -961,7 +997,74 @@ def script_main(script_name, download, download_playlist = None):
             sys.exit(1)
 
 def url_to_module(url):
-    from .extractors import netease, w56, acfun, baidu, baomihua, bilibili, blip, catfun, cntv, cbs, coursera, dailymotion, dongting, douban, douyutv, ehow, facebook, freesound, google, sina, ifeng, alive, instagram, iqiyi, joy, jpopsuki, khan, ku6, kugou, kuwo, letv, lizhi, magisto, miomio, mixcloud, mtv81, nicovideo, pptv, qq, sohu, songtaste, soundcloud, ted, theplatform, tudou, tucao, tumblr, twitter, vid48, videobam, vidto, vimeo, vine, vk, xiami, yinyuetai, youku, youtube, zhanqi
+    from .extractors import (
+        acfun,
+        alive,
+        archive,
+        baidu,
+        baomihua,
+        bilibili,
+        blip,
+        catfun,
+        cbs,
+        cntv,
+        coursera,
+        dailymotion,
+        dongting,
+        douban,
+        douyutv,
+        ehow,
+        facebook,
+        freesound,
+        funshion,
+        google,
+        ifeng,
+        instagram,
+        iqilu,
+        iqiyi,
+        joy,
+        jpopsuki,
+        khan,
+        ku6,
+        kugou,
+        kuwo,
+        letv,
+        lizhi,
+        magisto,
+        metacafe,
+        miaopai,
+        miomio,
+        mixcloud,
+        mtv81,
+        nanagogo,
+        netease,
+        nicovideo,
+        pptv,
+        qianmo,
+        qq,
+        sina,
+        sohu,
+        songtaste,
+        soundcloud,
+        ted,
+        theplatform,
+        tucao,
+        tudou,
+        tumblr,
+        twitter,
+        vid48,
+        videobam,
+        vidto,
+        vimeo,
+        vine,
+        vk,
+        w56,
+        xiami,
+        yinyuetai,
+        youku,
+        youtube,
+        zhanqi,
+    )
 
     video_host = r1(r'https?://([^/]+)/', url)
     video_url = r1(r'https?://[^/]+(.*)', url)
@@ -977,6 +1080,7 @@ def url_to_module(url):
         '163': netease,
         '56': w56,
         'acfun': acfun,
+        'archive': archive,
         'baidu': baidu,
         'baomihua': baomihua,
         'bilibili': bilibili,
@@ -992,11 +1096,13 @@ def url_to_module(url):
         'ehow': ehow,
         'facebook': facebook,
         'freesound': freesound,
+        'fun': funshion,
         'google': google,
         'iask': sina,
         'ifeng': ifeng,
         'in': alive,
         'instagram': instagram,
+        'iqilu': iqilu,
         'iqiyi': iqiyi,
         'joy': joy,
         'jpopsuki': jpopsuki,
@@ -1008,11 +1114,14 @@ def url_to_module(url):
         'letv': letv,
         'lizhi':lizhi,
         'magisto': magisto,
+        'metacafe': metacafe,
         'miomio': miomio,
         'mixcloud': mixcloud,
         'mtv81': mtv81,
+        '7gogo': nanagogo,
         'nicovideo': nicovideo,
         'pptv': pptv,
+        'qianmo':qianmo,
         'qq': qq,
         'sina': sina,
         'smgbb': bilibili,
@@ -1029,6 +1138,7 @@ def url_to_module(url):
         'videobam': videobam,
         'vidto': vidto,
         'vimeo': vimeo,
+        'weibo': miaopai,
         'vine': vine,
         'vk': vk,
         'xiami': xiami,
@@ -1047,9 +1157,12 @@ def url_to_module(url):
         res = conn.getresponse()
         location = res.getheader('location')
         if location is None:
-            raise NotImplementedError(url)
-        else:
+            from .extractors import embed
+            return embed, url
+        elif location != url:
             return url_to_module(location)
+        else:
+            raise NotImplementedError(url)
 
 def any_download(url, **kwargs):
     m, url = url_to_module(url)

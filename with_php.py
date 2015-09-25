@@ -12,6 +12,6 @@ def mycall(url, stream_id=None):
     rt = my_call(url, stream_id)
     return rt
     
- def test():
+def test():
     print('pp test')
     return ''

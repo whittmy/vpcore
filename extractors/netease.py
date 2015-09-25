@@ -45,10 +45,10 @@ def netease_cloud_music_download(url, output_dir='.', merge=True, info_only=Fals
     elif "song" in url:
         j = loads(get_content("http://music.163.com/api/song/detail/?id=%s&ids=[%s]&csrf_token=" % (rid, rid), headers={"Referer": "http://music.163.com/"}))
         netease_song_download(j["songs"][0], output_dir=output_dir, info_only=info_only)
+
     elif "mv" in url:
         j = loads(get_content("http://music.163.com/api/mv/detail/?id=%s&ids=[%s]&csrf_token=" % (rid, rid), headers={"Referer": "http://music.163.com/"}))
         netease_video_download(j['data'], output_dir=output_dir, info_only=info_only)
-
 
 def netease_video_download(vinfo, output_dir='.', info_only=False):
     title = "%s - %s" % (vinfo['name'], vinfo['artistName'])

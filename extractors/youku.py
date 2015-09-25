@@ -6,6 +6,7 @@ from ..extractor import VideoExtractor
 
 import base64
 import time
+import traceback
 
 class Youku(VideoExtractor):
     name = "优酷 (Youku)"
@@ -57,7 +58,8 @@ class Youku(VideoExtractor):
         """
         return match1(url, r'youku\.com/v_show/id_([a-zA-Z0-9=]+)') or \
           match1(url, r'player\.youku\.com/player\.php/sid/([a-zA-Z0-9=]+)/v\.swf') or \
-          match1(url, r'loader\.swf\?VideoIDS=([a-zA-Z0-9=]+)')
+          match1(url, r'loader\.swf\?VideoIDS=([a-zA-Z0-9=]+)') or \
+          match1(url, r'player\.youku\.com/embed/([a-zA-Z0-9=]+)')
 
     def get_playlist_id_from_url(url):
         """Extracts playlist ID from URL.
@@ -73,11 +75,22 @@ class Youku(VideoExtractor):
 
         video_page = get_content('http://www.youku.com/playlist_show/id_%s' % playlist_id)
         videos = set(re.findall(r'href="(http://v\.youku\.com/[^?"]+)', video_page))
+
+        for extra_page_url in set(re.findall('href="(http://www\.youku\.com/playlist_show/id_%s_[^?"]+)' % playlist_id, video_page)):
+            extra_page = get_content(extra_page_url)
+            videos |= set(re.findall(r'href="(http://v\.youku\.com/[^?"]+)', extra_page))
+
         self.title = re.search(r'<meta name="title" content="([^"]+)"', video_page).group(1)
         self.p_playlist()
         for video in videos:
             index = parse_query_param(video, 'f')
-            self.__class__().download_by_url(video, index=index, **kwargs)
+            try:
+                self.__class__().download_by_url(video, index=index, **kwargs)
+            except KeyboardInterrupt:
+                raise
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_exception(exc_type, exc_value, exc_traceback)
 
     def prepare(self, **kwargs):
         assert self.url or self.vid

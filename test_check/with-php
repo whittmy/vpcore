@@ -18,19 +18,21 @@ if sys.version_info[0] == 3:
     if __name__ == '__main__': #因为当前为执行，所以__name__为 '__main__'
     
         print('##### youku ####### http://v.youku.com/v_show/id_XMTI5MjcwNDI5Mg==.html?from=y1.2-2.4.2')
-        print(vpcore.mycall('http://v.youku.com/v_show/id_XMTI5MjcwNDI5Mg==.html?from=y1.2-2.4.2')+'\n')
+        print(vpcore.mycall('http://v.youku.com/v_show/id_XMTI5MjcwNDI5Mg==.html?from=y1.2-2.4.2')+'\n\n\n')
         
-        print('##### iqiyi ####### http://www.iqiyi.com/v_19rroheauw.html')
-        print(vpcore.mycall('http://www.iqiyi.com/v_19rroheauw.html')+'\n')
+        print('##### iqiyi ####### http://m.iqiyi.com/v_19rro2q4mg.html')
+        print(vpcore.mycall('http://m.iqiyi.com/v_19rro2q4mg.html')+'\n\n\n')
+        # 2015.9.25 8:58->16:11 http://cache.m.iqiyi.com/jp/tmts/347655300/be63d714afd883b930f81679d9f05d5f/?platForm=h5&rate=1&tvid=347655300&vid=be63d714afd883b930f81679d9f05d5f&cupid=qc_100001_100102&type=m3u8&qyid=a889e164b02f494698d78af0947b750c&nolimit=0&src=d846d0c32d664d32b6b54ea48997a589&sc=ed67e08a784a3b8fff12f8f1f9d1aaac&__refI=&qd_wsz=MF85MDA=&t=1443142642342&__jsT=sijsc&callback=jsonp1    
 
-        print('##### letv #######  http://www.letv.com/ptv/vplay/23264743.html')
-        '''
-        stream_id: 720p, 1080p, 350, 1300, 1000
-        '''
-        print(vpcore.mycall('http://www.letv.com/ptv/vplay/23264743.html', '720p')+'\n')  
-
-        print('##### sohu ####### http://tv.sohu.com/20150811/n418543855.shtml')
-        print(vpcore.mycall('http://tv.sohu.com/20150811/n418543855.shtml')+'\n')        
+        
+        ##print('##### letv #######  http://www.letv.com/ptv/vplay/23264743.html')
+        #'''
+        #stream_id: 720p, 1080p, 350, 1300, 1000
+        #'''
+        #print(vpcore.mycall('http://www.letv.com/ptv/vplay/23264743.html', '720p')+'\n')  
+        #
+        #print('##### sohu ####### http://tv.sohu.com/20150811/n418543855.shtml')
+        #print(vpcore.mycall('http://tv.sohu.com/20150811/n418543855.shtml')+'\n')        
        
 else:
     from you_get.util import log

@@ -2,6 +2,7 @@
 
 from .acfun import *
 from .alive import *
+from .archive import *
 from .baidu import *
 from .bilibili import *
 from .blip import *
@@ -15,9 +16,11 @@ from .douyutv import *
 from .ehow import *
 from .facebook import *
 from .freesound import *
+from .funshion import *
 from .google import *
 from .ifeng import *
 from .instagram import *
+from .iqilu import *
 from .iqiyi import *
 from .joy import *
 from .jpopsuki import *
@@ -27,12 +30,15 @@ from .kuwo import *
 from .letv import *
 from .lizhi import *
 from .magisto import *
+from .metacafe import *
+from .miaopai import *
 from .miomio import *
 from .mixcloud import *
 from .mtv81 import *
 from .netease import *
 from .nicovideo import *
 from .pptv import *
+from .qianmo import *
 from .qq import *
 from .sina import *
 from .sohu import *
