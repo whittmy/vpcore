@@ -1058,7 +1058,7 @@ def script_main(script_name, download, download_playlist, **kwargs):
         opts = ['playlist'] + opts
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_opts, opts)
-        #print (args)
+        #print (opts)
     except getopt.GetoptError as err:
         log.e(err)
         log.e("try 'you-get --help' for more options")
@@ -1083,6 +1083,7 @@ def script_main(script_name, download, download_playlist, **kwargs):
     extractor_proxy = None
     traceback = False
     for o, a in opts:
+        #print (o)
         if o in ('-V', '--version'):
             version()
             sys.exit()

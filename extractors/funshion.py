@@ -10,31 +10,50 @@ import json
 def funshion_download(url, output_dir = '.', merge = False, info_only = False, **kwargs):
     """"""
     if re.match(r'http://www.fun.tv/vplay/v-(\w+)', url):  #single video
+        #print("single")
+        if kwargs['geturl']:
+            ulist = funshion_download_by_url(url, output_dir = '.', merge = False, info_only = False, get_url=True)
+            return "\n".join(ulist).strip('\n')
+            
         funshion_download_by_url(url, output_dir = '.', merge = False, info_only = False)
     elif re.match(r'http://www.fun.tv/vplay/g-(\w+)', url):  #whole drama
-        funshion_download_by_drama_url(url, output_dir = '.', merge = False, info_only = False)
+        #print("whole")
+        if kwargs['geturl']:
+            #print("get-url")
+            return funshion_download_by_drama_url(url, output_dir = '.', merge = False, info_only = False, get_url=True)
+            
+        #这个函数的调用很是奇葩，以最后我自己添加的参数为例
+        # 首先函数定义部分 需要指定参数get_url, 若未指定默认值，则不管怎么调用都出错。
+        # 若指定默认值时， 则调用时 必须指定"get_url=xx"形式才不会出错
+        # 错误会被 __main__中参数处理部分的异常捕获。
+        #  非常奇怪！！！！
+        funshion_download_by_drama_url(url, output_dir = '.', merge = False, info_only = False, get_url=False) 
     else:
         return
 
 # Logics for single video until drama
 #----------------------------------------------------------------------
-def funshion_download_by_url(url, output_dir = '.', merge = False, info_only = False):
+def funshion_download_by_url(url, output_dir = '.', merge = False, info_only = False, get_url=False):
     """lots of stuff->None
     Main wrapper for single video download.
     """
     if re.match(r'http://www.fun.tv/vplay/v-(\w+)', url):
         match = re.search(r'http://www.fun.tv/vplay/v-(\d+)(.?)', url)
     vid = match.group(1)
-    funshion_download_by_vid(vid, output_dir = '.', merge = False, info_only = False)
+    if get_url:
+        return funshion_download_by_vid(vid, output_dir = '.', merge = False, info_only = False, get_url=True)  # return list
+    funshion_download_by_vid(vid, output_dir = '.', merge = False, info_only = False, get_url=False)
 
 #----------------------------------------------------------------------
-def funshion_download_by_vid(vid, output_dir = '.', merge = False, info_only = False):
+def funshion_download_by_vid(vid, output_dir = '.', merge = False, info_only = False, get_url=False):
     """vid->None
     Secondary wrapper for single video download.
     """
+    if get_url:
+        return funshion_vid_to_urls(vid)    # return list
+    
     title = funshion_get_title_by_vid(vid)
     url_list = funshion_vid_to_urls(vid)
-    
     for url in url_list:
         type, ext, size = url_info(url)
         print_info(site_info, title, type, size)
@@ -59,7 +78,7 @@ def funshion_vid_to_urls(vid):
 
 #Logics for drama until helper functions
 #----------------------------------------------------------------------
-def funshion_download_by_drama_url(url, output_dir = '.', merge = False, info_only = False):
+def funshion_download_by_drama_url(url, output_dir = '.', merge = False, info_only = False, get_url=False):
     """str->None
     url = 'http://www.fun.tv/vplay/g-95785/'
     """
@@ -69,16 +88,26 @@ def funshion_download_by_drama_url(url, output_dir = '.', merge = False, info_on
     
     video_list = funshion_drama_id_to_vid(id)
     
+    if get_url==True:
+        urls = '';
+        for video in video_list:
+            ulist = funshion_download_by_id((video[0], id), output_dir = '.', merge = False, info_only = False, get_url=True)
+            urls = urls + "\n".join(ulist).strip('\n')  + "$$$"      # list->字符串 join
+        return urls.strip('\n$');
+        
     for video in video_list:
         funshion_download_by_id((video[0], id), output_dir = '.', merge = False, info_only = False)
         # id is for drama, vid not the same as the ones used in single video
 
 #----------------------------------------------------------------------
-def funshion_download_by_id(vid_id_tuple, output_dir = '.', merge = False, info_only = False):
+def funshion_download_by_id(vid_id_tuple, output_dir = '.', merge = False, info_only = False, get_url=False):
     """single_episode_id, drama_id->None
     Secondary wrapper for single drama video download.
     """
     (vid, id) = vid_id_tuple
+    if get_url:
+        return funshion_id_to_urls(vid)
+    
     title = funshion_get_title_by_id(vid, id)
     url_list = funshion_id_to_urls(vid)
     
@@ -98,7 +127,9 @@ def funshion_drama_id_to_vid(episode_id):
     
     **THIS VID IS NOT THE SAME WITH THE ONES USED IN SINGLE VIDEO!!**
     """
+    #print('begin to get: '+ 'http://pm.funshion.com/v5/media/episode?id={episode_id}&cl=aphone&uc=5'.format(episode_id = episode_id))
     html = get_content('http://pm.funshion.com/v5/media/episode?id={episode_id}&cl=aphone&uc=5'.format(episode_id = episode_id))
+    #print('get ok')
     c = json.loads(html)
     #{'definition': [{'name': '流畅', 'code': 'tv'}, {'name': '标清', 'code': 'dvd'}, {'name': '高清', 'code': 'hd'}], 'retmsg': 'ok', 'total': '32', 'sort': '1', 'prevues': [], 'retcode': '200', 'cid': '2', 'template': 'grid', 'episodes': [{'num': '1', 'id': '624728', 'still': None, 'name': '第1集', 'duration': '45:55'}, ], 'name': '太行山上', 'share': 'http://pm.funshion.com/v5/media/share?id=201554&num=', 'media': '201554'}
     return [(i['id'], i['num']) for i in c['episodes']]
@@ -108,7 +139,9 @@ def funshion_id_to_urls(id):
     """int->list of URL
     Select video URL for single drama video.
     """
+    #print('begin to get  : '+ 'http://pm.funshion.com/v5/media/play/?id={id}&cl=aphone&uc=5'.format(id = id))
     html = get_content('http://pm.funshion.com/v5/media/play/?id={id}&cl=aphone&uc=5'.format(id = id))
+    #print('get ok')
     return select_url_from_video_api(html)
 
 #----------------------------------------------------------------------
@@ -141,10 +174,15 @@ def select_url_from_video_api(html):
     #{'retmsg': 'ok', 'retcode': '200', 'selected': 'tv', 'mp4': [{'filename': '', 'http': 'http://jobsfe.funshion.com/query/v1/mp4/7FCD71C58EBD4336DF99787A63045A8F3016EC51.json', 'filesize': '96748671', 'code': 'tv', 'name': '流畅', 'infohash': '7FCD71C58EBD4336DF99787A63045A8F3016EC51'}...], 'episode': '626464'}
     video_dic = {}
     for i in c['mp4']:
-        video_dic[i['code']] = i['http']
-    quality_preference_list = ['sdvd', 'hd', 'dvd', 'sd']
-    url = [video_dic[quality] for quality in quality_preference_list if quality in video_dic][0]
+        video_dic[i['code']] = i['http']    # 建立各个清晰度及其url的对应关系
+    quality_preference_list = ['dvd', 'sd','sdvd', 'hd']
+    
+    # 遍历quality_preference_list，若某元素存在于video_dic中，则取其对应的url
+    # 换句话说， 上面这个list即为 清晰度的优先级
+    url = [video_dic[quality] for quality in quality_preference_list if quality in video_dic][0]    
+    #print('begin to get: '+ url)
     html = get_html(url)
+    #print('get ok')
     c = json.loads(html)
     #'{"return":"succ","client":{"ip":"107.191.**.**","sp":"0","loc":"0"},"playlist":[{"bits":"1638400","tname":"dvd","size":"555811243","urls":["http:\\/\\/61.155.217.4:80\\/play\\/1E070CE31DAA1373B667FD23AA5397C192CA6F7F.mp4",...]}]}'
     return [i['urls'][0] for i in c['playlist']]
