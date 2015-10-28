@@ -1,5 +1,8 @@
 运行.bat 
   python3 you-get op arg 测试原汁原味的功能
+	如：python3 you-get -u http://v.youku.com/v_show/id_XMTI5MjcwNDI5Mg==.html?from=y1.2-2.4.2
+
+	
   python3 with-php	测试用于php中的模块功能是否正确，里面包含各个网站测试网址及解析信息。
 
 

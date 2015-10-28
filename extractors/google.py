@@ -40,9 +40,9 @@ fmt_level = dict(
                 youtube_codecs],
         range(len(youtube_codecs))))
 
-def google_download(url, output_dir = '.', merge = True, info_only = False):
+def google_download(url, output_dir = '.', merge = True, info_only = False, **kwargs):
     # Percent-encoding Unicode URL
-    url = parse.quote(url, safe = ':/+%')
+    url = parse.quote(url, safe = ':/+%?=')
 
     service = url.split('/')[2].split('.')[0]
 
@@ -74,15 +74,23 @@ def google_download(url, output_dir = '.', merge = True, info_only = False):
                 filename = parse.unquote(r1(r'filename="?(.+)"?', response.headers['content-disposition'])).split('.')
                 title = ''.join(filename[:-1])
 
-        for i in range(0, len(real_urls)):
-            real_url = real_urls[i]
+        if not real_urls:
+            # extract the image
+            # FIXME: download multple images / albums
+            real_urls = [r1(r'<meta property="og:image" content="([^"]+)', html)]
+            post_date = r1(r'"(20\d\d-[01]\d-[0123]\d)"', html)
+            post_id = r1(r'/posts/([^"]+)', html)
+            title = post_date + "_" + post_id
+
+        for (i, real_url) in enumerate(real_urls):
+            title_i = "%s[%s]" % (title, i) if len(real_urls) > 1 else title
             type, ext, size = url_info(real_url)
             if ext is None:
                 ext = 'mp4'
 
-            print_info(site_info, "%s[%s]" % (title, i), ext, size)
+            print_info(site_info, title_i, ext, size)
             if not info_only:
-                download_urls([real_url], "%s[%s]" % (title, i), ext, size, output_dir, merge = merge)
+                download_urls([real_url], title_i, ext, size, output_dir, merge = merge)
 
     elif service in ['docs', 'drive'] : # Google Docs
 

@@ -3,6 +3,8 @@
 from ..common import *
 from ..extractor import VideoExtractor
 
+from xml.dom.minidom import parseString
+
 class YouTube(VideoExtractor):
     name = "YouTube"
 
@@ -126,6 +128,11 @@ class YouTube(VideoExtractor):
                 self.title = parse.unquote_plus(video_info['title'][0])
                 stream_list = video_info['url_encoded_fmt_stream_map'][0].split(',')
 
+                # Parse video page (for DASH)
+                video_page = get_content('https://www.youtube.com/watch?v=%s' % self.vid)
+                ytplayer_config = json.loads(re.search('ytplayer.config\s*=\s*([^\n]+?});', video_page).group(1))
+                self.html5player = 'https:' + ytplayer_config['assets']['js']
+
             else:
                 # Parse video page instead
                 video_page = get_content('https://www.youtube.com/watch?v=%s' % self.vid)
@@ -138,7 +145,11 @@ class YouTube(VideoExtractor):
         elif video_info['status'] == ['fail']:
             if video_info['errorcode'] == ['150']:
                 video_page = get_content('https://www.youtube.com/watch?v=%s' % self.vid)
-                ytplayer_config = json.loads(re.search('ytplayer.config\s*=\s*([^\n]+});ytplayer', video_page).group(1))
+                try:
+                    ytplayer_config = json.loads(re.search('ytplayer.config\s*=\s*([^\n]+});ytplayer', video_page).group(1))
+                except:
+                    msg = re.search('class="message">([^<]+)<', video_page).group(1)
+                    log.wtf('[Failed] "%s"' % msg.strip())
 
                 if 'title' in ytplayer_config['args']:
                     # 150 Restricted from playback on certain sites
@@ -174,6 +185,147 @@ class YouTube(VideoExtractor):
                 'container': mime_to_container(metadata['type'][0].split(';')[0]),
             }
 
+        # Prepare caption tracks
+        try:
+            caption_tracks = ytplayer_config['args']['caption_tracks'].split(',')
+            for ct in caption_tracks:
+                for i in ct.split('&'):
+                    [k, v] = i.split('=')
+                    if k == 'lc': lang = v
+                    if k == 'u': ttsurl = parse.unquote_plus(v)
+                tts_xml = parseString(get_content(ttsurl))
+                transcript = tts_xml.getElementsByTagName('transcript')[0]
+                texts = transcript.getElementsByTagName('text')
+                srt = ""; seq = 0
+                for text in texts:
+                    seq += 1
+                    start = float(text.getAttribute('start'))
+                    if text.getAttribute('dur'):
+                        dur = float(text.getAttribute('dur'))
+                    else: dur = 1.0 # could be ill-formed XML
+                    finish = start + dur
+                    m, s = divmod(start, 60); h, m = divmod(m, 60)
+                    start = '{:0>2}:{:0>2}:{:06.3f}'.format(int(h), int(m), s).replace('.', ',')
+                    m, s = divmod(finish, 60); h, m = divmod(m, 60)
+                    finish = '{:0>2}:{:0>2}:{:06.3f}'.format(int(h), int(m), s).replace('.', ',')
+                    content = text.firstChild.nodeValue
+
+                    srt += '%s\n' % str(seq)
+                    srt += '%s --> %s\n' % (start, finish)
+                    srt += '%s\n\n' % content
+
+                self.caption_tracks[lang] = srt
+        except: pass
+
+        # Prepare DASH streams
+        try:
+            dashmpd = ytplayer_config['args']['dashmpd']
+            dash_xml = parseString(get_content(dashmpd))
+            for aset in dash_xml.getElementsByTagName('AdaptationSet'):
+                mimeType = aset.getAttribute('mimeType')
+                if mimeType == 'audio/mp4':
+                    rep = aset.getElementsByTagName('Representation')[-1]
+                    burls = rep.getElementsByTagName('BaseURL')
+                    dash_mp4_a_url = burls[0].firstChild.nodeValue
+                    dash_mp4_a_size = burls[0].getAttribute('yt:contentLength')
+                elif mimeType == 'audio/webm':
+                    rep = aset.getElementsByTagName('Representation')[-1]
+                    burls = rep.getElementsByTagName('BaseURL')
+                    dash_webm_a_url = burls[0].firstChild.nodeValue
+                    dash_webm_a_size = burls[0].getAttribute('yt:contentLength')
+                elif mimeType == 'video/mp4':
+                    for rep in aset.getElementsByTagName('Representation'):
+                        w = int(rep.getAttribute('width'))
+                        h = int(rep.getAttribute('height'))
+                        if w > 1280:
+                            itag = rep.getAttribute('id')
+                            burls = rep.getElementsByTagName('BaseURL')
+                            dash_url = burls[0].firstChild.nodeValue
+                            dash_size = burls[0].getAttribute('yt:contentLength')
+                            self.dash_streams[itag] = {
+                                'quality': '%sx%s' % (w, h),
+                                'itag': itag,
+                                'type': mimeType,
+                                'mime': mimeType,
+                                'container': 'mp4',
+                                'src': [dash_url, dash_mp4_a_url],
+                                'size': int(dash_size) + int(dash_mp4_a_size)
+                            }
+                elif mimeType == 'video/webm':
+                    for rep in aset.getElementsByTagName('Representation'):
+                        w = int(rep.getAttribute('width'))
+                        h = int(rep.getAttribute('height'))
+                        if w > 1280:
+                            itag = rep.getAttribute('id')
+                            burls = rep.getElementsByTagName('BaseURL')
+                            dash_url = burls[0].firstChild.nodeValue
+                            dash_size = burls[0].getAttribute('yt:contentLength')
+                            self.dash_streams[itag] = {
+                                'quality': '%sx%s' % (w, h),
+                                'itag': itag,
+                                'type': mimeType,
+                                'mime': mimeType,
+                                'container': 'webm',
+                                'src': [dash_url, dash_webm_a_url],
+                                'size': int(dash_size) + int(dash_webm_a_size)
+                            }
+        except:
+            # VEVO
+            self.js = get_content(self.html5player)
+            if 'adaptive_fmts' in ytplayer_config['args']:
+                streams = [dict([(i.split('=')[0],
+                                  parse.unquote(i.split('=')[1]))
+                                 for i in afmt.split('&')])
+                           for afmt in ytplayer_config['args']['adaptive_fmts'].split(',')]
+                for stream in streams: # audio
+                    if stream['type'].startswith('audio/mp4'):
+                        dash_mp4_a_url = stream['url']
+                        if 's' in stream:
+                            sig = self.__class__.decipher(self.js, stream['s'])
+                            dash_mp4_a_url += '&signature={}'.format(sig)
+                        dash_mp4_a_size = stream['clen']
+                    elif stream['type'].startswith('audio/webm'):
+                        dash_webm_a_url = stream['url']
+                        if 's' in stream:
+                            sig = self.__class__.decipher(self.js, stream['s'])
+                            dash_webm_a_url += '&signature={}'.format(sig)
+                        dash_webm_a_size = stream['clen']
+                for stream in streams: # video
+                    if 'size' in stream:
+                        w = int(r1(r'(\d+)x\d+', stream['size']))
+                        if w > 1280 and stream['type'].startswith('video/mp4'):
+                            mimeType = 'video/mp4'
+                            dash_url = stream['url']
+                            sig = self.__class__.decipher(self.js, stream['s'])
+                            dash_url += '&signature={}'.format(sig)
+                            dash_size = stream['clen']
+                            itag = stream['itag']
+                            self.dash_streams[itag] = {
+                                'quality': stream['size'],
+                                'itag': itag,
+                                'type': mimeType,
+                                'mime': mimeType,
+                                'container': 'mp4',
+                                'src': [dash_url, dash_mp4_a_url],
+                                'size': int(dash_size) + int(dash_mp4_a_size)
+                            }
+                        elif w > 1280 and stream['type'].startswith('video/webm'):
+                            mimeType = 'video/webm'
+                            dash_url = stream['url']
+                            sig = self.__class__.decipher(self.js, stream['s'])
+                            dash_url += '&signature={}'.format(sig)
+                            dash_size = stream['clen']
+                            itag = stream['itag']
+                            self.dash_streams[itag] = {
+                                'quality': stream['size'],
+                                'itag': itag,
+                                'type': mimeType,
+                                'mime': mimeType,
+                                'container': 'webm',
+                                'src': [dash_url, dash_webm_a_url],
+                                'size': int(dash_size) + int(dash_webm_a_size)
+                            }
+
     def extract(self, **kwargs):
         if not self.streams_sorted:
             # No stream is available
@@ -182,7 +334,7 @@ class YouTube(VideoExtractor):
         if 'stream_id' in kwargs and kwargs['stream_id']:
             # Extract the stream
             stream_id = kwargs['stream_id']
-            if stream_id not in self.streams:
+            if stream_id not in self.streams and stream_id not in self.dash_streams:
                 log.e('[Error] Invalid video format.')
                 log.e('Run \'-i\' command with no specific video format to view all available formats.')
                 exit(2)
@@ -190,20 +342,20 @@ class YouTube(VideoExtractor):
             # Extract stream with the best quality
             stream_id = self.streams_sorted[0]['itag']
 
-        src = self.streams[stream_id]['url']
+        if stream_id in self.streams:
+            src = self.streams[stream_id]['url']
+            if self.streams[stream_id]['sig'] is not None:
+                sig = self.streams[stream_id]['sig']
+                src += '&signature={}'.format(sig)
+            elif self.streams[stream_id]['s'] is not None:
+                if not hasattr(self, 'js'):
+                    self.js = get_content(self.html5player)
+                s = self.streams[stream_id]['s']
+                sig = self.__class__.decipher(self.js, s)
+                src += '&signature={}'.format(sig)
 
-        if self.streams[stream_id]['sig'] is not None:
-            sig = self.streams[stream_id]['sig']
-            src += '&signature={}'.format(sig)
-
-        elif self.streams[stream_id]['s'] is not None:
-            s = self.streams[stream_id]['s']
-            js = get_content(self.html5player)
-            sig = self.__class__.decipher(js, s)
-            src += '&signature={}'.format(sig)
-
-        self.streams[stream_id]['src'] = [src]
-        self.streams[stream_id]['size'] = urls_size(self.streams[stream_id]['src'])
+            self.streams[stream_id]['src'] = [src]
+            self.streams[stream_id]['size'] = urls_size(self.streams[stream_id]['src'])
 
 site = YouTube()
 download = site.download_by_url

@@ -21,7 +21,8 @@ youku_embed_patterns = [ 'youku\.com/v_show/id_([a-zA-Z0-9=]+)',
 """
 http://www.tudou.com/programs/view/html5embed.action?type=0&amp;code=3LS_URGvl54&amp;lcode=&amp;resourceId=0_06_05_99
 """
-tudou_embed_patterns = [ 'tudou\.com[a-zA-Z0-9\/\?=\&\.\;]+code=([[a-zA-Z0-9_]+)\&'
+tudou_embed_patterns = [ 'tudou\.com[a-zA-Z0-9\/\?=\&\.\;]+code=([[a-zA-Z0-9_]+)\&',
+                         'www\.tudou\.com/v/([[a-zA-Z0-9_]+)/[^"]*v\.swf'
                        ]
 
 """
@@ -34,12 +35,12 @@ def embed_download(url, output_dir = '.', merge = True, info_only = False ,**kwa
     found = False
     title = match1(content, '<title>([^<>]+)</title>')
     vids = matchall(content, youku_embed_patterns)
-    for vid in vids:
+    for vid in set(vids):
         found = True
         youku_download_by_vid(vid, title=title, output_dir=output_dir, merge=merge, info_only=info_only)
 
     vids = matchall(content, tudou_embed_patterns)
-    for vid in vids:
+    for vid in set(vids):
         found = True
         tudou_download_by_id(vid, title=title, output_dir=output_dir, merge=merge, info_only=info_only)
 

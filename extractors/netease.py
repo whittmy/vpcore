@@ -9,6 +9,15 @@ import hashlib
 import base64
 import os
 
+def netease_hymn():
+    return """
+    player's Game Over,
+    u can abandon.
+    u get pissed,
+    get pissed,
+    Hallelujah my King!
+    errr oh! fuck ohhh!!!!
+    """
 
 def netease_cloud_music_download(url, output_dir='.', merge=True, info_only=False):
     rid = match1(url, r'id=(.*)')
@@ -28,6 +37,10 @@ def netease_cloud_music_download(url, output_dir='.', merge=True, info_only=Fals
 
         for i in j['album']['songs']:
             netease_song_download(i, output_dir=new_dir, info_only=info_only)
+            try: # download lyrics
+                l = loads(get_content("http://music.163.com/api/song/lyric/?id=%s&lv=-1&csrf_token=" % i['id'], headers={"Referer": "http://music.163.com/"}))
+                netease_lyric_download(i, l["lrc"]["lyric"], output_dir=new_dir, info_only=info_only)
+            except: pass
 
     elif "playlist" in url:
         j = loads(get_content("http://music.163.com/api/playlist/detail?id=%s&csrf_token=" % rid, headers={"Referer": "http://music.163.com/"}))
@@ -41,14 +54,33 @@ def netease_cloud_music_download(url, output_dir='.', merge=True, info_only=Fals
 
         for i in j['result']['tracks']:
             netease_song_download(i, output_dir=new_dir, info_only=info_only)
+            try: # download lyrics
+                l = loads(get_content("http://music.163.com/api/song/lyric/?id=%s&lv=-1&csrf_token=" % i['id'], headers={"Referer": "http://music.163.com/"}))
+                netease_lyric_download(i, l["lrc"]["lyric"], output_dir=new_dir, info_only=info_only)
+            except: pass
 
     elif "song" in url:
         j = loads(get_content("http://music.163.com/api/song/detail/?id=%s&ids=[%s]&csrf_token=" % (rid, rid), headers={"Referer": "http://music.163.com/"}))
         netease_song_download(j["songs"][0], output_dir=output_dir, info_only=info_only)
+        try: # download lyrics
+            l = loads(get_content("http://music.163.com/api/song/lyric/?id=%s&lv=-1&csrf_token=" % rid, headers={"Referer": "http://music.163.com/"}))
+            netease_lyric_download(j["songs"][0], l["lrc"]["lyric"], output_dir=output_dir, info_only=info_only)
+        except: pass
 
     elif "mv" in url:
         j = loads(get_content("http://music.163.com/api/mv/detail/?id=%s&ids=[%s]&csrf_token=" % (rid, rid), headers={"Referer": "http://music.163.com/"}))
         netease_video_download(j['data'], output_dir=output_dir, info_only=info_only)
+
+def netease_lyric_download(song, lyric, output_dir='.', info_only=False):
+    if info_only: return
+
+    title = "%s. %s" % (song['position'], song['name'])
+    filename = '%s.lrc' % get_filename(title)
+    print('Saving %s ...' % filename, end="", flush=True)
+    with open(os.path.join(output_dir, filename),
+              'w', encoding='utf-8') as x:
+        x.write(lyric)
+        print('Done.')
 
 def netease_video_download(vinfo, output_dir='.', info_only=False):
     title = "%s - %s" % (vinfo['name'], vinfo['artistName'])
@@ -77,7 +109,7 @@ def netease_download_common(title, url_best, output_dir, info_only):
         download_urls([url_best], title, ext, size, output_dir)
 
 
-def netease_download(url, output_dir = '.', merge = True, info_only = False):
+def netease_download(url, output_dir = '.', merge = True, info_only = False, **kwargs):
     if "163.fm" in url:
         url = get_location(url)
     if "music.163.com" in url:
@@ -116,12 +148,12 @@ def netease_download(url, output_dir = '.', merge = True, info_only = False):
 
 
 def encrypted_id(dfsId):
-    dfsId = str(dfsId)
-    byte1 = bytearray('3go8&$8*3*3h0k(2)2', encoding='ascii')
-    byte2 = bytearray(dfsId, encoding='ascii')
-    byte1_len = len(byte1)
+    x = [ord(i[0]) for i in netease_hymn().split()]
+    y = ''.join([chr(i - 61) if i > 96 else chr(i + 32) for i in x])
+    byte1 = bytearray(y, encoding='ascii')
+    byte2 = bytearray(str(dfsId), encoding='ascii')
     for i in range(len(byte2)):
-        byte2[i] = byte2[i] ^ byte1[i % byte1_len]
+        byte2[i] ^= byte1[i % len(byte1)]
     m = hashlib.md5()
     m.update(byte2)
     result = base64.b64encode(m.digest()).decode('ascii')

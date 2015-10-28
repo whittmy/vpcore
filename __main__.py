@@ -88,7 +88,7 @@ def main(**kwargs):
     you-get (legacy)
     """
     from .common import main
-    main()
+    main(**kwargs)
 if __name__ == '__main__':
     main()
 

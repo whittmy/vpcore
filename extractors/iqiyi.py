@@ -10,6 +10,7 @@ import json
 from math import floor
 from zlib import decompress
 import hashlib
+import urllib.parse
 
 '''
 Changelog:
@@ -27,7 +28,7 @@ Changelog:
      add
      callpropvoid        QName(PackageNamespace(""), "trace"), 1
    ```
- 
+
 -> http://www.iqiyi.com/common/flashplayer/20150820/MainPlayer_5_2_27_2_c3_3_7_3.swf
     some small changes in Zombie.bite function
 
@@ -47,14 +48,10 @@ bid meaning for quality
 
 '''
 def mix(tvid):
-    enc = []
-    enc.append('eac64f22daf001da6ba9aa8da4d501508bbe90a4d4091fea3b0582a85b38c2cc')
+    salt = '2c76de15dcb44bd28ff0927d50d31620'
     tm = str(randint(2000,4000))
-    src = 'eknas'
-    enc.append(str(tm))
-    enc.append(tvid)
-    sc = hashlib.new('md5',bytes(("".join(enc))[1:64:2]+tm+tvid,'utf-8')).hexdigest()
-    return tm,sc,src
+    sc = hashlib.new('md5', bytes(salt + tm + tvid, 'utf-8')).hexdigest()
+    return tm, sc, 'eknas'
 
 def getVRSXORCode(arg1,arg2):
     loc3=arg2 %3
@@ -122,19 +119,27 @@ class Iqiyi(VideoExtractor):
     def getTmts(self):
         tvid, vid = self.vid
         rt = self.compute_by_phantomjs(tvid)    # 成员函数被掉用 self. , 成员函数定义时第一个参数为 self
-
+        #print(rt+"\n\n")
         src = r1(r'src\s=\s([a-z 0-9]+)', rt)
         sc = r1(r'sc\s=\s([a-z 0-9]+)', rt)
         qd_wsz = r1(r'qd_wsz\s=\s([^\\]+)', rt)
         t = r1(r't\s=\s([^\\]+)', rt)
         jst = r1(r'jsT\s=\s([^\\]+)', rt)
-        
+        qd_jsin = r1(r'qd_jsin\s=\s([^\\]+)', rt)   # new
+        refI = urllib.parse.unquote(r1(r'__refI\s=\s([^\\]+)', rt)) #new
+        pos = refI.find(';')
+        if pos!=-1:
+            refI = refI[pos:]
+            refI = self.url + refI
+            refI = urllib.parse.quote_plus (urllib.parse.quote_plus (refI)) #quote_plus : for char '/'
+        #print(refI)
         if src==None or sc==None \
             or qd_wsz==None or t==None or jst==None:
             print('!!! get data error from phantomjs !!!')
             exit()
 
         # uid 只是代表唯一id而已
+        # 每次变更，优先先确认如下的接口参数是否有变更
         uid = self.gen_uid
         tmtsreq = 'http://cache.m.iqiyi.com/jp/tmts/' +tvid+'/be63d714afd883b930f81679d9f05d5f/?platForm=h5&rate=1' +\
                 "&tvid=" + tvid +\
@@ -144,11 +149,13 @@ class Iqiyi(VideoExtractor):
                 "&nolimit=0" +\
                 "&src=" + src +\
                 "&sc=" +sc +\
-                "&__refI=" +\
+                "&__refI=" + refI +\
                 "&qd_wsz=" + qd_wsz +\
                 "&t=" + t +\
+                "&qd_jsin=" + qd_jsin +\
                 "&__jsT=" + jst +\
                 "&callback=jsonp1"
+        #print(tmtsreq)
         rt = get_content(tmtsreq)
         try:
             info = json.loads(r1(r'\((\{.*\})\)', rt))
@@ -204,7 +211,9 @@ class Iqiyi(VideoExtractor):
 
         info = self.getVMS()
 
-        assert info["code"] == "A000000"
+        if info["code"] != "A000000":
+            log.e("[error] outdated iQIYI key")
+            log.wtf("is your you-get up-to-date?")
 
         self.title = info["data"]["vi"]["vn"]
 
