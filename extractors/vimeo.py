@@ -28,22 +28,20 @@ def vimeo_download_by_channel_id(channel_id, output_dir = '.', merge = False, in
         vimeo_download_by_id(id, None, output_dir, merge, info_only)
 
 def vimeo_download_by_id(id, title = None, output_dir = '.', merge = True, info_only = False):
-    html = get_content('https://vimeo.com/' + id)
-
     try:
+        html = get_content('https://vimeo.com/' + id)
         config_url = unescape_html(r1(r'data-config-url="([^"]+)"', html))
         video_page = get_content(config_url, headers=fake_headers)
         title = r1(r'"title":"([^"]+)"', video_page)
+        info = loads(video_page)
     except:
         video_page = get_content('http://player.vimeo.com/video/%s' % id, headers=fake_headers)
         title = r1(r'<title>([^<]+)</title>', video_page)
+        info = loads(match1(video_page, r'var t=(\{[^;]+\});'))
 
-    info = dict(re.findall(r'"([^"]+)":\{[^{]+"url":"([^"]+)"', video_page))
-    for quality in ['hd', 'sd', 'mobile']:
-        if quality in info:
-            url = info[quality]
-            break
-    assert url
+    streams = info['request']['files']['progressive']
+    streams = sorted(streams, key=lambda i: i['height'])
+    url = streams[-1]['url']
 
     type, ext, size = url_info(url, faker=True)
 
@@ -52,10 +50,10 @@ def vimeo_download_by_id(id, title = None, output_dir = '.', merge = True, info_
         download_urls([url], title, ext, size, output_dir, merge = merge, faker = True)
 
 def vimeo_download(url, output_dir = '.', merge = True, info_only = False, **kwargs):
-    if re.match(r'http://vimeo.com/channels/\w+', url):
+    if re.match(r'https?://vimeo.com/channels/\w+', url):
         vimeo_download_by_channel(url, output_dir, merge, info_only)
     else:
-        id = r1(r'http://[\w.]*vimeo.com[/\w]*/(\d+)$', url)
+        id = r1(r'https?://[\w.]*vimeo.com[/\w]*/(\d+)$', url)
         assert id
 
         vimeo_download_by_id(id, None, output_dir = output_dir, merge = merge, info_only = info_only)

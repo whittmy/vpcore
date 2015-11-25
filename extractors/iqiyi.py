@@ -155,7 +155,7 @@ class Iqiyi(VideoExtractor):
                 "&qd_jsin=" + qd_jsin +\
                 "&__jsT=" + jst +\
                 "&callback=jsonp1"
-        #print(tmtsreq)
+        print(tmtsreq)
         rt = get_content(tmtsreq)
         try:
             info = json.loads(r1(r'\((\{.*\})\)', rt))

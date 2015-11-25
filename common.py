@@ -45,8 +45,10 @@ SITES = {
     'miomio'     : 'miomio',
     'mixcloud'   : 'mixcloud',
     'mtv81'      : 'mtv81',
+    'musicplayon': 'musicplayon',
     '7gogo'      : 'nanagogo',
     'nicovideo'  : 'nicovideo',
+    'pinterest'  : 'pinterest',
     'pixnet'     : 'pixnet',
     'pptv'       : 'pptv',
     'qianmo'     : 'qianmo',
@@ -555,7 +557,8 @@ class SimpleProgressBar:
 
     def update_received(self, n):
         self.received += n
-        bytes_ps = n / (time.time() - self.last_updated)
+        time_diff = time.time() - self.last_updated
+        bytes_ps = n / time_diff if time_diff else 0
         if bytes_ps >= 1048576:
             self.speed = '{:4.0f} MB/s'.format(bytes_ps / 1048576)
         elif bytes_ps >= 1024:
@@ -1178,7 +1181,7 @@ def script_main(script_name, download, download_playlist, **kwargs):
             raise
         else:
             sys.exit(1)
-    except:
+    except Exception:
         if not traceback:
             log.e('[error] oops, something went wrong.')
             log.e('don\'t panic, c\'est la vie. please try the following steps:')
